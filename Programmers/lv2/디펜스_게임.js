@@ -3,66 +3,120 @@
 // function solution(n, k, enemy) {
 //   if (k >= enemy.length) return enemy.length;
 //   // 무적권이 많으면 바로 퇴출
-//   let maxEnemy = 0;
-//   let canEnemyNum = 0;
+//   let round = 0;
+//   let canEnemy = [];
 //   for (let i = 0; i < enemy.length; i++) {
-//     canEnemyNum += enemy[i];
-//     // 가능한 범위내에서 배열에 넣고 최대 수도 정한다.
-//     if (maxEnemy < enemy[i]) {
-//       maxEnemy = enemy[i];
-//     }
-
-//     if (canEnemyNum > n) {
-//       // 만약 최대수가 내 병사보다 많다면
-//       if (k === 0) {
-//         // 병사보다 많지만 무적권이 없다. 난 여기까지
-//         return i;
-//       } else {
-//         // 무적권이 있다. 그러면 무적권 하나 차감하고 가장 높은 라운드 적을 제외시킨다.
-//         k -= 1;
-//         canEnemyNum -= maxEnemy;
-//         maxEnemy = 0;
-//       }
+//     canEnemy.push(enemy[i]);
+//     // 현재꺼 넣었다.
+//     if (n >= enemy[i]) {
+//       // 현재거보다 내게 더 크면
+//       n -= enemy[i];
+//       // 내거에서 지금을 빼
+//       round++;
+//       // 그리고 라운드 추가
+//       continue;
+//     } else if (k) {
+//       // 현재거가 커 그리고 무적권이 있어
+//       let big = canEnemy.sort((a, b) => b - a).shift();
+//       n = big >= enemy[i] ? n + big : n + enemy[i];
+//       // 있던놈이 크던 현재놈이 크던
+//       k--;
+//       n -= enemy[i];
+//       // 현재 애를 빼준다
+//       round++;
+//       continue;
+//     } else {
+//       console.log(`3`);
+//       break;
 //     }
 //   }
-//   return enemy.length;
+
+//   return round;
 // }
+// solution(100, 2, [10, 10, 10, 10, 1000, 1000, 10, 1000]);
 
-function solution(n, k, enemy) {
-  if (k >= enemy.length) return enemy.length;
-  // 무적권이 많으면 바로 퇴출
+// 그냥 내 라운드에 일단 무적권 써
+// 그리고 다음놈이 커 그럼 무적권 취소하고 얘한테 무적권써 그럼무조건 한놈한테만 쓰잖아
 
-  let canEnemy = [];
-  let canEnemyNum = 0;
-  for (let i = 0; i < enemy.length; i++) {
-    canEnemy.push(enemy[i]);
-    canEnemyNum += enemy[i];
-    // 가능한 범위내에서 배열에 넣고 최대 수도 정한다.
-    if (canEnemyNum > n) {
-      // 만약 최대수가 내 병사보다 많다면
-      if (k === 0) {
-        // 병사보다 많지만 무적권이 없다. 난 여기까지
-        return i;
-      } else {
-        // 무적권이 있다. 그러면 무적권 하나 차감하고 가장 높은 라운드 적을 제외시킨다.
-        k -= 1;
-        let bestChoice = canEnemy.sort((a, b) => b - a).shift();
-        canEnemy = canEnemy.slice(0, 2);
-        canEnemyNum -= bestChoice;
+// 5 2 [99,2,99]
+
+// 힙
+class MinHeap {
+  constructor() {
+    this.heap = [];
+  }
+
+  getLeftChildIndex(parentIndex) {
+    return 2 * parentIndex + 1;
+  }
+
+  getRightChildIndex(parentIndex) {
+    return 2 * parentIndex + 2;
+  }
+
+  getParentIndex(childIndex) {
+    return Math.floor((childIndex - 1) / 2);
+  }
+
+  swap(index1, index2) {
+    const temp = this.heap[index1];
+    this.heap[index1] = this.heap[index2];
+    this.heap[index2] = temp;
+  }
+
+  peek() {
+    return this.heap[0];
+  }
+
+  insert(value) {
+    this.heap.push(value);
+    this.heapifyUp();
+  }
+
+  heapifyUp() {
+    let index = this.heap.length - 1;
+    while (index > 0) {
+      const parentIndex = this.getParentIndex(index);
+      if (this.heap[parentIndex] <= this.heap[index]) {
+        break;
       }
+      this.swap(parentIndex, index);
+      index = parentIndex;
     }
   }
-  return enemy.length;
+
+  remove() {
+    if (this.heap.length === 0) {
+      return null;
+    }
+    if (this.heap.length === 1) {
+      return this.heap.pop();
+    }
+    const value = this.heap[0];
+    this.heap[0] = this.heap.pop();
+    this.heapifyDown();
+    return value;
+  }
+
+  heapifyDown() {
+    let index = 0;
+    while (this.getLeftChildIndex(index) < this.heap.length) {
+      const leftChildIndex = this.getLeftChildIndex(index);
+      const rightChildIndex = this.getRightChildIndex(index);
+      const smallerChildIndex = rightChildIndex < this.heap.length && this.heap[rightChildIndex] < this.heap[leftChildIndex] ? rightChildIndex : leftChildIndex;
+      if (this.heap[index] <= this.heap[smallerChildIndex]) {
+        break;
+      }
+      this.swap(index, smallerChildIndex);
+      index = smallerChildIndex;
+    }
+  }
 }
-console.log(solution(1, 3, [12, 11, 4, 1, 1, 5, 8, 6, 7]));
 
-// 무적권을 언제써야할까?
-// 1. enemy를 순차적으로 병사 이전까지 합한다
-// 2. 합한 라운드에서 가장 높은 적을 제외한다 + 무적권 -1
-// 3. 가능하다면 다음 라운드를 더하고 다시 가장 높은 적을 제외한다 + 무적권 -1
+function solution(n, k, enemy) {
+  var answer = 0;
+  const minHeap = new MinHeap();
 
-let a = [1, 121212, 332, 4244, 52526, 7724, 7887811];
-
-a.sort((a, b) => a - b);
-a = a.slice(0, 2);
-console.log(a);
+  return answer;
+}
+// 테스트
